@@ -478,7 +478,7 @@ async function createServer() {
 const app = await createServer();
 
 // Start listener only if not in Vercel environment
-if (process.env.NODE_VMC_ID || process.env.RENDER || process.env.PORT || !process.env.VERCEL) {
+if (!process.env.VERCEL) {
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);

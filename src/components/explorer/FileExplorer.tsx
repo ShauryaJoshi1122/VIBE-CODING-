@@ -132,7 +132,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, o
         return (
           <div key={item.path} className="select-none">
             {isRenaming ? (
-              <form onSubmit={handleRename} className="flex items-center gap-2 px-3 py-1.5" style={{ paddingLeft: `${level * 12 + 12}px` }}>
+              <form onSubmit={handleRename} className="flex items-center gap-2 px-3 py-1.5" style={{ paddingLeft: `${level * (window.innerWidth < 640 ? 8 : 12) + 12}px` }}>
                 <Folder className="w-4 h-4 text-emerald-500/40 shrink-0" />
                 <input 
                   autoFocus
@@ -148,7 +148,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, o
                   "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all group hover:bg-white/5",
                   "text-neutral-400 hover:text-neutral-200"
                 )}
-                style={{ paddingLeft: `${level * 12 + 12}px` }}
+                style={{ paddingLeft: `${level * (window.innerWidth < 640 ? 8 : 12) + 12}px` }}
               >
                 <div onClick={() => toggleDir(item.path)} className="w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer">
                   {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -191,7 +191,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, o
             {isExpanded && (
               <div className="mt-0.5">
                 {isCreating && creationPath === item.path && (
-                  <form onSubmit={handleCreate} className="flex items-center gap-2 px-3 py-1.5 animate-in slide-in-from-left-2" style={{ paddingLeft: `${(level + 1) * 12 + 28}px` }}>
+                  <form onSubmit={handleCreate} className="flex items-center gap-2 px-3 py-1.5 animate-in slide-in-from-left-2" style={{ paddingLeft: `${(level + 1) * (window.innerWidth < 640 ? 8 : 12) + 28}px` }}>
                     {isCreating === 'file' ? <FileCode2 className="w-4 h-4 text-emerald-500/40" /> : <Folder className="w-4 h-4 text-emerald-500/40" />}
                     <input 
                       autoFocus
@@ -216,7 +216,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, o
           className="group relative"
         >
           {isRenaming ? (
-            <form onSubmit={handleRename} className="flex items-center gap-2 px-3 py-1.5" style={{ paddingLeft: `${level * 12 + 28}px` }}>
+            <form onSubmit={handleRename} className="flex items-center gap-2 px-3 py-1.5" style={{ paddingLeft: `${level * (window.innerWidth < 640 ? 8 : 12) + 28}px` }}>
               <ScaleIcon name={item.name} />
               <input 
                 autoFocus
@@ -235,7 +235,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({ files, activeFile, o
                   ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20 ring-1 ring-emerald-500/10" 
                   : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200 border-transparent"
               )}
-              style={{ paddingLeft: `${level * 12 + 28}px` }}
+              style={{ paddingLeft: `${level * (window.innerWidth < 640 ? 8 : 12) + 28}px` }}
             >
               <div className="shrink-0">{getFileIcon(item.name, isActive)}</div>
               <span className="truncate flex-1">{item.name}</span>

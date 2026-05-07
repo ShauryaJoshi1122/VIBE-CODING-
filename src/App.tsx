@@ -3,13 +3,15 @@ import { Sidebar } from './components/layout/Sidebar';
 import { CodeEditor } from './components/editor/CodeEditor';
 import { FileExplorer } from './components/explorer/FileExplorer';
 import { useAppStore } from './store/useAppStore';
-import { Code2, LayoutPanelLeft, FileCode2, Download, Package, Github, RefreshCw, Cloud, MessageSquarePlus, X, Check, Loader2, ChevronRight } from 'lucide-react';
+import { Code2, LayoutPanelLeft, FileCode2, Download, Package, Github, RefreshCw, Cloud, MessageSquarePlus, X, Check, Loader2, ChevronRight, Sparkles } from 'lucide-react';
 import { cn, downloadFile, downloadProject } from './lib/utils';
 import { saveProjectToCloud } from './lib/firebase';
 import { useState, useEffect } from 'react';
 
+import { motion, AnimatePresence } from 'motion/react';
+
 export default function App() {
-  const { projectId, files, activeFile, setActiveFile, resetStore, messages, githubToken, setGithubToken, isSaving, setIsSaving, isGenerating } = useAppStore();
+  const { projectId, files, activeFile, setActiveFile, resetStore, messages, githubToken, setGithubToken, isSaving, setIsSaving, isGenerating, sidebarOpen, setSidebarOpen } = useAppStore();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isPushing, setIsPushing] = useState(false);
@@ -75,7 +77,14 @@ export default function App() {
 
     try {
       const res = await fetch('/api/auth/github/url');
-      const data = await res.json();
+      const text = await res.text();
+      
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Server returned HTML instead of JSON. Ensure GITHUB_CLIENT_ID is set in environment secrets. (Raw: ${text.substring(0, 50)}...)`);
+      }
       
       if (!res.ok) {
         throw new Error(data.error || "Failed to get auth URL");
@@ -190,175 +199,216 @@ export default function App() {
       <div className="radial-glow w-[800px] h-[800px] top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 opacity-20" />
       <div className="radial-glow-green w-[600px] h-[600px] top-0 right-0 translate-x-1/4 -translate-y-1/4 opacity-10" />
       
-      <Sidebar />
+      <AnimatePresence mode="wait">
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: -340 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -340 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 left-0 lg:relative z-50 shrink-0"
+          >
+            <Sidebar />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* GitHub Push Modal */}
-      {showGithubModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-[400px] bg-neutral-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-6 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                  <Github className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm">Push to GitHub</h3>
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-0.5">Export source code</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  setShowGithubModal(false);
-                  setPushResult(null);
-                }}
-                className="p-2 hover:bg-white/5 rounded-xl transition-colors text-neutral-500 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {!pushResult ? (
-                <>
-                  <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 mb-2">
-                    <button 
-                      onClick={() => handleCreateModeChange('new')}
-                      className={cn(
-                        "flex-1 py-2 rounded-lg text-[11px] font-bold transition-all",
-                        createMode === 'new' ? "bg-white/10 text-white" : "text-neutral-500 hover:text-neutral-300"
-                      )}
-                    >
-                      New Repository
-                    </button>
-                    <button 
-                      onClick={() => handleCreateModeChange('existing')}
-                      className={cn(
-                        "flex-1 py-2 rounded-lg text-[11px] font-bold transition-all",
-                        createMode === 'existing' ? "bg-white/10 text-white" : "text-neutral-500 hover:text-neutral-300"
-                      )}
-                    >
-                      Existing Repository
-                    </button>
+      <AnimatePresence>
+        {showGithubModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowGithubModal(false);
+                setPushResult(null);
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-[400px] bg-neutral-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden relative"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                    <Github className="w-5 h-5 text-white" />
                   </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Push to GitHub</h3>
+                    <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-0.5">Export source code</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowGithubModal(false);
+                    setPushResult(null);
+                  }}
+                  className="p-2 hover:bg-white/5 rounded-xl transition-colors text-neutral-500 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Repo Name</label>
-                      {createMode === 'new' ? (
+              <div className="p-6 space-y-4">
+                {!pushResult ? (
+                  <>
+                    <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 mb-2">
+                      <button 
+                        onClick={() => handleCreateModeChange('new')}
+                        className={cn(
+                          "flex-1 py-2 rounded-lg text-[11px] font-bold transition-all",
+                          createMode === 'new' ? "bg-white/10 text-white" : "text-neutral-500 hover:text-neutral-300"
+                        )}
+                      >
+                        New Repository
+                      </button>
+                      <button 
+                        onClick={() => handleCreateModeChange('existing')}
+                        className={cn(
+                          "flex-1 py-2 rounded-lg text-[11px] font-bold transition-all",
+                          createMode === 'existing' ? "bg-white/10 text-white" : "text-neutral-500 hover:text-neutral-300"
+                        )}
+                      >
+                        Existing Repository
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Repo Name</label>
+                        {createMode === 'new' ? (
+                          <input 
+                            type="text"
+                            value={repoName}
+                            onChange={(e) => setRepoName(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-'))}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
+                            placeholder="my-vibe-project"
+                          />
+                        ) : (
+                          <div className="relative">
+                            <select 
+                              value={repoName}
+                              onChange={(e) => {
+                                const repo = userRepos.find(r => r.name === e.target.value);
+                                setRepoName(e.target.value);
+                                if (repo) setBranchName(repo.default_branch || 'main');
+                              }}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors appearance-none"
+                              disabled={isLoadingRepos}
+                            >
+                              <option value="" disabled>{isLoadingRepos ? 'Loading repositories...' : 'Select a repository...'}</option>
+                              {userRepos.map(repo => (
+                                <option key={repo.name} value={repo.name}>{repo.name}</option>
+                              ))}
+                            </select>
+                            {isLoadingRepos && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Branch</label>
                         <input 
                           type="text"
-                          value={repoName}
-                          onChange={(e) => setRepoName(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-'))}
+                          value={branchName}
+                          onChange={(e) => setBranchName(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-'))}
                           className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
-                          placeholder="my-vibe-project"
+                          placeholder="main"
                         />
-                      ) : (
-                        <div className="relative">
-                          <select 
-                            value={repoName}
-                            onChange={(e) => {
-                              const repo = userRepos.find(r => r.name === e.target.value);
-                              setRepoName(e.target.value);
-                              if (repo) setBranchName(repo.default_branch || 'main');
-                            }}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors appearance-none"
-                            disabled={isLoadingRepos}
-                          >
-                            <option value="" disabled>{isLoadingRepos ? 'Loading repositories...' : 'Select a repository...'}</option>
-                            {userRepos.map(repo => (
-                              <option key={repo.name} value={repo.name}>{repo.name}</option>
-                            ))}
-                          </select>
-                          {isLoadingRepos && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin text-neutral-500" />
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Branch</label>
-                      <input 
-                        type="text"
-                        value={branchName}
-                        onChange={(e) => setBranchName(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-'))}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
-                        placeholder="main"
-                      />
-                    </div>
-                  </div>
 
-                  <button
-                    onClick={handlePushToGithub}
-                    disabled={isPushing || !repoName}
-                    className="w-full bg-white text-black font-bold h-12 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:scale-100 mt-2"
-                  >
-                    {isPushing ? (
+                    <button
+                      onClick={handlePushToGithub}
+                      disabled={isPushing || !repoName}
+                      className="w-full bg-white text-black font-bold h-12 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:scale-100 mt-2"
+                    >
+                      {isPushing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Pushing files...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          {createMode === 'new' ? 'Create & Push' : 'Push to Branch'}
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-center py-4 space-y-4">
+                    {pushResult.success ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Pushing files...
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                          <Check className="w-8 h-8 text-emerald-400" />
+                        </div>
+                        <h4 className="font-bold">Project Pushed Successfully!</h4>
+                        <p className="text-sm text-neutral-400">Your collection of files has been pushed to your new GitHub repository.</p>
+                        <a 
+                          href={pushResult.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-colors mt-2"
+                        >
+                           View on GitHub <Github className="w-4 h-4" />
+                        </a>
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-4 h-4" />
-                        {createMode === 'new' ? 'Create & Push' : 'Push to Branch'}
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                          <X className="w-8 h-8 text-red-400" />
+                        </div>
+                        <h4 className="font-bold">Push Failed</h4>
+                        <p className="text-sm text-neutral-400">{pushResult.message || "An unknown error occurred during the push process."}</p>
+                        <button 
+                          onClick={() => setPushResult(null)}
+                          className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-colors"
+                        >
+                          Try Again
+                        </button>
                       </>
                     )}
-                  </button>
-                </>
-              ) : (
-                <div className="text-center py-4 space-y-4">
-                  {pushResult.success ? (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                        <Check className="w-8 h-8 text-emerald-400" />
-                      </div>
-                      <h4 className="font-bold">Project Pushed Successfully!</h4>
-                      <p className="text-sm text-neutral-400">Your collection of files has been pushed to your new GitHub repository.</p>
-                      <a 
-                        href={pushResult.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-colors mt-2"
-                      >
-                         View on GitHub <Github className="w-4 h-4" />
-                      </a>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
-                        <X className="w-8 h-8 text-red-400" />
-                      </div>
-                      <h4 className="font-bold">Push Failed</h4>
-                      <p className="text-sm text-neutral-400">{pushResult.message || "An unknown error occurred during the push process."}</p>
-                      <button 
-                        onClick={() => setPushResult(null)}
-                        className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-colors"
-                      >
-                        Try Again
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="flex-1 flex flex-col relative z-10 my-3 mr-3 rounded-2xl overflow-hidden border border-white/10 glass-panel shadow-2xl">
-        {/* Workspace Header */}
-        <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-white/[0.03] backdrop-blur-md overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2.5 text-[13px] font-semibold text-neutral-300">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                <LayoutPanelLeft className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                )}
               </div>
-              <span className="tracking-tight hidden sm:inline">Workspace</span>
-              <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/50">{projectId}</span>
-            </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <motion.main 
+        layout
+        className={cn(
+          "flex-1 flex flex-col relative z-10 m-0 sm:m-3 lg:mr-3 sm:rounded-2xl overflow-hidden border border-white/10 glass-panel shadow-2xl transition-all duration-300",
+          !sidebarOpen ? "sm:ml-3" : "sm:ml-0"
+        )}
+      >
+        <header className="h-14 border-b border-border-dark flex items-center justify-between px-6 bg-app-bg">
+          <div className="flex items-center gap-4 shrink-0">
+            {!sidebarOpen && (
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 -ml-2 rounded-lg hover:bg-surface-hover text-neutral-400 hover:text-white transition-colors"
+                title="Open Sidebar"
+              >
+                <Sparkles className="w-4 h-4" />
+              </motion.button>
+            )}
+            <h2 className="text-sm font-medium text-neutral-200">
+               {Object.values(files).find(f => f.path === activeFile)?.name || 'Untitled'}
+            </h2>
           </div>
           
           <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -383,7 +433,7 @@ export default function App() {
             <button
               onClick={handleConnectGithub}
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all group",
+                "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all group active:scale-95",
                 githubToken 
                   ? "bg-neutral-500/10 text-neutral-400 border border-white/5 hover:bg-white/5 hover:text-white" 
                   : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:text-emerald-300"
@@ -395,7 +445,7 @@ export default function App() {
             <button
               onClick={handleSaveToCloud}
               disabled={isSaving}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 hover:text-blue-300 transition-all disabled:opacity-50 group"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 hover:text-blue-300 transition-all disabled:opacity-50 group active:scale-95"
               title={lastSaved ? `Last saved at ${lastSaved.toLocaleTimeString()}` : 'Save to Cloud'}
             >
               <Cloud className={cn("w-3.5 h-3.5 transition-transform", isSaving ? "animate-pulse" : "group-hover:-translate-y-0.5")} />
@@ -407,7 +457,7 @@ export default function App() {
             <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block" />
             <button
               onClick={handleDownloadProject}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:text-emerald-300 transition-all hidden sm:flex group"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 hover:text-emerald-300 transition-all hidden sm:flex group active:scale-95"
               title="Download full project"
             >
               <Package className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
@@ -416,7 +466,7 @@ export default function App() {
             
             <button
                onClick={handleReset}
-               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/20"
+               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/20 active:scale-95"
                title="New Chat"
             >
               <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -427,15 +477,13 @@ export default function App() {
 
         {/* Editor Workspace */}
         <div className="flex-1 overflow-hidden relative bg-black/20">
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex flex-col sm:flex-row">
             {/* File Explorer */}
-            <div className="w-[240px] bg-white/[0.01] border-r border-white/5 flex flex-col">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-white/5 mb-2">
-                <div className="text-[10px] font-bold tracking-[0.2em] text-neutral-500 uppercase flex items-center gap-2">
-                  <FileCode2 className="w-3.5 h-3.5 text-emerald-500/60" /> Explorer
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto scrollbar-none">
+            <motion.div 
+              layout
+              className="w-full sm:w-[240px] h-[35%] sm:h-full bg-white/[0.01] border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col overflow-hidden"
+            >
+              <div className="flex-1 overflow-y-auto no-scrollbar">
                 <FileExplorer 
                   files={files} 
                   activeFile={activeFile} 
@@ -445,7 +493,7 @@ export default function App() {
                   }} 
                 />
               </div>
-            </div>
+            </motion.div>
             <div className="flex-1 overflow-hidden relative">
                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent z-10" />
                <div className="flex flex-col h-full">
@@ -467,7 +515,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      </main>
+      </motion.main>
     </div>
   );
 }

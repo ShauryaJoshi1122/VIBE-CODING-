@@ -6,11 +6,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '../../lib/utils';
 
+import { motion, AnimatePresence } from 'motion/react';
+
 export function ChatPanel() {
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { messages, addMessage, isGenerating, setIsGenerating, files, setFiles, openRouterKey, clearMessages } = useAppStore();
+  const { messages, addMessage, isGenerating, setIsGenerating, files, setFiles, openRouterKey, clearMessages, setSidebarOpen } = useAppStore();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,6 +51,11 @@ export function ChatPanel() {
         }
         setFiles(newFiles);
         useAppStore.getState().setActiveView('preview');
+        
+        // On mobile, close sidebar after generation to show preview
+        if (window.innerWidth < 1024) {
+          setSidebarOpen(false);
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -61,108 +68,134 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-col h-full relative bg-transparent">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth pb-32 scrollbar-none">
-        {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center px-6">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center mb-8 border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
-              <Sparkles className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Create with VibeStudio</h3>
-            <p className="text-sm text-neutral-500 mb-10 max-w-xs leading-relaxed">
-              Design, build, and deploy production-grade React apps using natural language.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-              {[
-                { name: "Portfolio", icon: <User className="w-3.5 h-3.5" /> },
-                { name: "Dashboard", icon: <LayoutPanelLeft className="w-3.5 h-3.5" /> },
-                { name: "E-commerce", icon: <ShoppingBag className="w-3.5 h-3.5" /> },
-                { name: "Chat App", icon: <Bot className="w-3.5 h-3.5" /> }
-              ].map(template => (
-                <button 
-                  key={template.name}
-                  onClick={() => setInput(`Build a modern ${template.name} using Tailwind CSS.`)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 text-[11px] font-bold text-neutral-400 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all group"
-                >
-                  <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-emerald-500/20 transition-colors">
-                    {template.icon}
-                  </div>
-                  {template.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg, idx) => (
-          <div 
-            key={msg.id} 
-            className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
-            style={{ animationDelay: `${idx * 100}ms` }}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              {msg.role === 'assistant' ? (
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                  <span className="relative flex h-2 w-2 mr-0.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                </div>
-              ) : (
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                  <User className="w-4 h-4 text-blue-400" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className={cn(
-                  "text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5",
-                  msg.role === 'assistant' ? "text-emerald-400" : "text-blue-400"
-                )}>
-                  {msg.role === 'assistant' ? 'Studio AI' : 'Creator'}
-                </span>
-                <span className="text-[9px] text-neutral-600 font-mono tracking-wider">04:20 PM</span>
+      <div 
+        ref={scrollRef} 
+        className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth pb-40 no-scrollbar"
+      >
+        <AnimatePresence mode="popLayout">
+          {messages.length === 0 ? (
+            <motion.div 
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              className="h-full flex flex-col items-center justify-center text-center px-6 py-20"
+            >
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center mb-8 border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
+                <Sparkles className="w-8 h-8 text-emerald-400" />
               </div>
-            </div>
-            
-            <div className={cn(
-              "text-[13.5px] leading-relaxed",
-              msg.role === 'assistant' ? "text-neutral-300 pl-11" : "text-white font-medium"
-            )}>
-              {msg.role === 'assistant' ? (
-                <div className="markdown-body prose prose-invert prose-emerald prose-sm max-w-none bg-white/[0.02] border border-white/5 p-5 rounded-2xl rounded-tl-none shadow-xl backdrop-blur-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Create with VibeStudio</h3>
+              <p className="text-sm text-neutral-500 mb-10 max-w-xs leading-relaxed">
+                Design, build, and deploy production-grade React apps using natural language.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+                {[
+                  { name: "Portfolio", icon: <User className="w-3.5 h-3.5" /> },
+                  { name: "Dashboard", icon: <LayoutPanelLeft className="w-3.5 h-3.5" /> },
+                  { name: "E-commerce", icon: <ShoppingBag className="w-3.5 h-3.5" /> },
+                  { name: "Chat App", icon: <Bot className="w-3.5 h-3.5" /> }
+                ].map((template, i) => (
+                  <motion.button 
+                    key={template.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    onClick={() => setInput(`Build a modern ${template.name} using Tailwind CSS.`)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 text-[11px] font-bold text-neutral-400 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all group lg:animate-none"
+                  >
+                    <div className="p-1.5 rounded-lg bg-white/5 group-hover:bg-emerald-500/20 transition-colors">
+                      {template.icon}
+                    </div>
+                    {template.name}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            messages.map((msg, idx) => (
+              <motion.div 
+                key={msg.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                layout
+                className="group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  {msg.role === 'assistant' ? (
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                      <span className="relative flex h-2 w-2 mr-0.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                      <User className="w-4 h-4 text-blue-400" />
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5",
+                      msg.role === 'assistant' ? "text-emerald-400" : "text-blue-400"
+                    )}>
+                      {msg.role === 'assistant' ? 'Studio AI' : 'Creator'}
+                    </span>
+                    <span className="text-[9px] text-neutral-600 font-mono tracking-wider">
+                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/5 rounded-tl-none shadow-xl">
-                  {msg.content}
+                
+                <div className={cn(
+                  "text-[13.5px] leading-relaxed",
+                  msg.role === 'assistant' ? "text-neutral-300 sm:pl-11" : "text-white font-medium sm:pl-11"
+                )}>
+                  {msg.role === 'assistant' ? (
+                    <div className="markdown-body prose prose-invert prose-emerald prose-sm max-w-none bg-white/[0.02] border border-white/5 p-5 rounded-2xl rounded-tl-none shadow-xl backdrop-blur-sm group-hover:border-white/10 transition-colors">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/5 rounded-tl-none shadow-xl group-hover:border-white/10 transition-colors">
+                      {msg.content}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
 
         {isGenerating && (
-          <div className="flex items-center gap-4 p-5 bg-white/[0.02] rounded-3xl border border-white/5 shadow-2xl w-full animate-pulse">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-4 p-5 bg-white/[0.02] rounded-3xl border border-white/5 shadow-2xl w-full"
+          >
             <div className="relative flex items-center justify-center w-8 h-8">
                <span className="absolute w-full h-full rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
                <Sparkles className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-bold text-white/90">Studio is architecting...</span>
+              <span className="text-sm font-bold text-white/90 animate-pulse">Studio is architecting...</span>
               <span className="text-[11px] text-neutral-500 tracking-wider uppercase font-semibold">Updating workspace files</span>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
-      <div className="absolute bottom-0 w-full p-6 pt-16 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/95 to-transparent flex flex-col gap-3">
+      <div className="absolute bottom-0 w-full p-4 sm:p-6 pt-16 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/95 to-transparent flex flex-col gap-3">
         {error && (
-          <div className="mb-2 px-4 py-3 flex items-start gap-3 bg-red-500/10 rounded-xl border border-red-500/20 text-red-400 text-xs shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-2">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-2 px-4 py-3 flex items-start gap-3 bg-red-500/10 rounded-xl border border-red-500/20 text-red-400 text-xs shadow-2xl backdrop-blur-xl"
+          >
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span className="flex-1 font-medium">{error}</span>
             <button onClick={() => setError(null)} className="text-red-400/50 hover:text-red-400 transition-colors"><X className="w-4 h-4"/></button>
-          </div>
+          </motion.div>
         )}
         
         <div className="flex items-center justify-between mb-1 px-2">
@@ -177,7 +210,10 @@ export function ChatPanel() {
           <div className="flex-1" />
         </div>
 
-        <form onSubmit={handleSubmit} className="relative group flex items-end bg-[#111] border border-white/10 rounded-2xl shadow-inner transition-all focus-within:border-emerald-500/30 focus-within:ring-4 focus-within:ring-emerald-500/5 overflow-hidden">
+        <form 
+          onSubmit={handleSubmit} 
+          className="relative group flex items-end bg-[#111] border border-white/10 rounded-2xl shadow-inner transition-all focus-within:border-emerald-500/30 focus-within:ring-4 focus-within:ring-emerald-500/5 overflow-hidden"
+        >
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -188,10 +224,9 @@ export function ChatPanel() {
               }
             }}
             placeholder="Describe your vision..."
-            className="w-full bg-transparent text-[13px] px-5 py-5 pr-14 resize-none outline-none transition-all placeholder:text-neutral-700 max-h-40 min-h-[64px]"
+            className="w-full bg-transparent text-[13px] px-5 py-5 pr-14 resize-none outline-none transition-all placeholder:text-neutral-700 max-h-40 min-h-[64px] no-scrollbar"
             rows={1}
             disabled={isGenerating}
-            style={{ height: 'auto' }}
           />
           <button
             type="submit"
@@ -202,7 +237,7 @@ export function ChatPanel() {
           </button>
         </form>
         <div className="text-center">
-           <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest">Built with Gemini 1.5 Pro</span>
+           <span className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest hidden sm:inline">Built with Gemini 1.5 Pro</span>
         </div>
       </div>
     </div>

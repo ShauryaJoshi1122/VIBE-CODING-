@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 import { ChatPanel } from '../chat/ChatPanel';
 
 export function Sidebar() {
-  const { openRouterKey, setOpenRouterKey } = useAppStore();
+  const { openRouterKey, setOpenRouterKey, sidebarOpen, setSidebarOpen } = useAppStore();
   const [showSettings, setShowSettings] = useState(false);
   const [keyInput, setKeyInput] = useState(openRouterKey || '');
 
@@ -14,9 +14,16 @@ export function Sidebar() {
     setShowSettings(false);
   };
 
+  if (!sidebarOpen) return null;
+
   return (
     <>
-      <div className="w-[340px] lg:w-[420px] h-full flex flex-col relative z-20 shrink-0 bg-[#0a0a0a] border-r border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.4)]">
+      <div 
+        className={cn(
+          "w-full sm:w-[340px] lg:w-[420px] h-full flex flex-col fixed inset-y-0 left-0 lg:relative z-50 shrink-0 bg-[#0a0a0a] border-r border-white/5 shadow-[20px_0_40px_rgba(0,0,0,0.4)] transition-all duration-300",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         <div className="flex-none h-14 border-b border-white/5 flex items-center justify-between px-6 bg-white/[0.01]">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
@@ -24,18 +31,36 @@ export function Sidebar() {
             </div>
             <h2 className="text-sm font-bold tracking-tight text-white/90">VibeStudio <span className="text-emerald-500">AI</span></h2>
           </div>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-xl hover:bg-white/5 text-neutral-500 hover:text-white transition-all ring-1 ring-transparent hover:ring-white/10"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-xl hover:bg-white/5 text-neutral-500 hover:text-white transition-all ring-1 ring-transparent hover:ring-white/10"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/5 text-neutral-500 hover:text-white transition-all lg:hidden"
+              title="Close Sidebar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 overflow-hidden relative">
            <ChatPanel />
         </div>
       </div>
+
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
