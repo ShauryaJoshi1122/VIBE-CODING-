@@ -1,0 +1,6 @@
+{
+  "name": "VibeStudio AI",
+  "description": "An autonomous AI coding platform that generates and edits full-stack web applications straight from prompts via OpenRouter.",
+  "requestFramePermissions": ["clipboard-read", "clipboard-write"],
+  "majorCapabilities": []
+}

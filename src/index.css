@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Roboto Mono", monospace;
+  --color-app-bg: #000000;
+  --color-border-dark: rgba(255, 255, 255, 0.08);
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-surface-hover: rgba(255, 255, 255, 0.06);
+}
+
+body {
+  font-family: theme("fontFamily.sans");
+  background-color: theme("colors.app-bg");
+  color: #fff;
+  overflow: hidden; /* Prevent body scroll in an IDE */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric glow effects */
+.radial-glow {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(120, 119, 198, 0.12) 0%, transparent 60%);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.radial-glow-green {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+  filter: blur(50px);
+  z-index: 0;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.glass-panel {
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid theme("colors.border-dark");
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .7; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Markdown prose overrides */
+.markdown-body {
+  color: #d4d4d4;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.markdown-body p {
+  margin-bottom: 1em;
+}
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1em 0;
+}
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+.markdown-body pre:last-child {
+  margin-bottom: 0;
+}
+.markdown-body code {
+  font-family: theme("fontFamily.mono");
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+}
+.markdown-body ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+.markdown-body strong {
+  color: #fff;
+  font-weight: 600;
+}

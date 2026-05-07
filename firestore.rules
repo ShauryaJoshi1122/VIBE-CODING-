@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidProject(data) {
+      return data.keys().hasAll(['files', 'updatedAt']) &&
+             data.files is map &&
+             (data.updatedAt is timestamp || data.updatedAt is string);
+    }
+
+    // --- Collections ---
+
+    match /projects/{projectId} {
+      // For this app, we allow public read/write by ID for simplicity of sharing projects
+      // but we validate the schema to prevent junk data.
+      allow get: if isValidId(projectId);
+      allow create, update: if isValidId(projectId) && isValidProject(incoming());
+      
+      // Prevent bulk listing of projects
+      allow list: if false;
+    }
+
+    // Pillar 3: Test connection path
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}

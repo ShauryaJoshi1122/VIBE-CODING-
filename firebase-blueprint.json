@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A coding project stored in VibeStudio",
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "object",
+          "description": "The files in the project"
+        },
+        "messages": {
+          "type": "array",
+          "description": "The chat history for the project"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["files", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Project data including files and messages"
+    }
+  }
+}
