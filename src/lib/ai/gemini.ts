@@ -39,8 +39,8 @@ export async function generateWithGemini(prompt: string, currentFiles: Record<st
     .map(([path, file]) => `--- FILE: ${path} ---\n${file.code}`)
     .join('\n\n');
 
-  // Try flash models
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  // Try recommended models
+  const models = ['gemini-3-flash-preview', 'gemini-2.0-flash'];
   let lastError = null;
 
   for (const model of models) {

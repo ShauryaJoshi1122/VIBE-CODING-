@@ -284,7 +284,7 @@ async function createServer() {
       
       if (!isPlaceholder) {
         console.log("[AI] Using server-side Gemini...");
-        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
+        const modelsToTry = ["gemini-3-flash-preview", "gemini-2.0-flash"];
         
         for (const modelName of modelsToTry) {
           try {
@@ -316,14 +316,16 @@ async function createServer() {
             console.error(`${modelName} API Error:`, err.message);
             let msg = err.message;
             try {
-              const parsed = JSON.parse(err.message);
-              if (parsed.error?.message) msg = parsed.error.message;
+              if (err.message && err.message.includes('{')) {
+                const parsed = JSON.parse(err.message.substring(err.message.indexOf('{')));
+                if (parsed.error?.message) msg = parsed.error.message;
+              }
             } catch (e) {}
             errors.push(`Gemini (${modelName}): ${msg}`);
           }
         }
       } else {
-        errors.push("Gemini API Key missing or using placeholder ($GEMINI_API_KEY).");
+        errors.push("Gemini API Key missing (server-side).");
       }
 
       // 2. Try NVIDIA NIM if user provided a key OR if we have a default NVIDIA key
