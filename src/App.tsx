@@ -75,7 +75,14 @@ export default function App() {
 
     try {
       const res = await fetch('/api/auth/github/url');
-      const { url } = await res.json();
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to get auth URL");
+      }
+
+      const { url } = data;
+      if (!url) throw new Error("No authorization URL returned from server");
       
       const width = 600;
       const height = 700;
@@ -87,9 +94,9 @@ export default function App() {
         'github_auth',
         `width=${width},height=${height},left=${left},top=${top}`
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Auth error:", error);
-      alert("Failed to start GitHub authentication");
+      alert(`GitHub Auth Error: ${error.message || "Failed to start authentication"}`);
     }
   };
 

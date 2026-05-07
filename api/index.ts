@@ -53,8 +53,11 @@ async function createServer() {
     const host = req.get('host');
     const baseUrl = `${protocol}://${host}`;
     
-    // Check if process.env.APP_URL is set, otherwise use the detected baseUrl
-    const redirectUri = `${process.env.APP_URL || baseUrl}/api/auth/github/callback`;
+    // Use explicit APP_URL if set (recommended for custom domains)
+    const currentUrl = process.env.APP_URL || baseUrl;
+    const redirectUri = `${currentUrl}/api/auth/github/callback`;
+
+    console.log(`[GitHub] Initiating OAuth for ${currentUrl}`);
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -71,11 +74,18 @@ async function createServer() {
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
-    if (!code || !clientId || !clientSecret) {
-      return res.status(400).send("Invalid request or missing credentials");
+    if (!code) {
+      return res.status(400).send("Authorization code missing from GitHub redirect");
+    }
+
+    if (!clientId || !clientSecret) {
+      console.error("[GitHub] Missing credentials. Ensure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are set in environment.");
+      return res.status(500).send("GitHub credentials (ID/Secret) are not configured on the server.");
     }
 
     try {
+      console.log("[GitHub] Exchanging code for access token...");
+      
       const response = await fetch("https://github.com/login/oauth/access_token", {
         method: "POST",
         headers: {
@@ -89,12 +99,20 @@ async function createServer() {
         }),
       });
 
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`GitHub API returned ${response.status}: ${errText}`);
+      }
+
       const data = await response.json();
       const accessToken = data.access_token;
 
       if (!accessToken) {
-        return res.status(401).send("Failed to obtain access token from GitHub");
+        console.error("[GitHub] Token exchange failed:", data);
+        return res.status(401).send(`Failed to obtain access token: ${data.error_description || data.error || "Unknown error"}`);
       }
+
+      console.log("[GitHub] Auth successful!");
 
       // Send the token back to the opener window and close the popup
       res.send(`
@@ -372,7 +390,7 @@ async function createServer() {
               if (response.status !== 401) {
                 allAuthFailed = false;
               }
-              errors.push(`[${model}] HTTP ${response.status}: ${errText}`);
+              errors.push(`[${model}] ${response.status}: ${errText.substring(0, 100)}`);
               continue;
             }
 
@@ -426,12 +444,12 @@ async function createServer() {
         return res.status(500).json({ error: `All models failed. Details:\\n${errors.join('\\n')}` });
     }
 
-    // If no NVIDIA key, but we had a Gemini error
-    if (errors.length > 0) {
-        return res.status(500).json({ error: errors.join('\n') });
-    }
+      // If no NVIDIA key, but we had errors (likely Gemini failed)
+      if (errors.length > 0) {
+        return res.status(500).json({ error: `Generation failed:\n${errors.sort().join('\n')}` });
+      }
 
-    return res.status(500).json({ error: "No AI API Keys found or configured. Please set GEMINI_API_KEY or NVIDIA_API_KEY." });
+      return res.status(500).json({ error: "No AI API Keys found. Please set GEMINI_API_KEY or NVIDIA_API_KEY in Settings." });
 
     } catch (e: any) {
       console.error("[API Error]", e);
