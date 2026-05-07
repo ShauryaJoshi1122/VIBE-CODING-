@@ -8,10 +8,12 @@ import { cn, downloadFile, downloadProject } from './lib/utils';
 import { saveProjectToCloud } from './lib/firebase';
 import { useState, useEffect } from 'react';
 
+import { ToDo } from './components/todo/ToDo';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const { projectId, files, activeFile, setActiveFile, resetStore, messages, githubToken, setGithubToken, isSaving, setIsSaving, isGenerating, sidebarOpen, setSidebarOpen } = useAppStore();
+  const [activeTab, setActiveTab] = useState<'editor' | 'todo'>('editor');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isPushing, setIsPushing] = useState(false);
@@ -389,8 +391,8 @@ export default function App() {
       <motion.main 
         layout
         className={cn(
-          "flex-1 flex flex-col relative z-10 m-0 sm:m-3 lg:mr-3 sm:rounded-2xl overflow-hidden border border-white/10 glass-panel shadow-2xl transition-all duration-300",
-          !sidebarOpen ? "sm:ml-3" : "sm:ml-0"
+          "flex-1 flex flex-col relative z-10 overflow-hidden border-none transition-all duration-300",
+          !sidebarOpen ? "" : ""
         )}
       >
         <header className="h-14 border-b border-border-dark flex items-center justify-between px-6 bg-app-bg">
@@ -407,7 +409,7 @@ export default function App() {
               </motion.button>
             )}
             <h2 className="text-sm font-medium text-neutral-200">
-               {Object.values(files).find(f => f.path === activeFile)?.name || 'Untitled'}
+               {activeFile ? activeFile.split('/').pop() : 'Untitled'}
             </h2>
           </div>
           
@@ -497,19 +499,28 @@ export default function App() {
             <div className="flex-1 overflow-hidden relative">
                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent z-10" />
                <div className="flex flex-col h-full">
-                 {activeFile && (
-                   <div className="h-10 shrink-0 bg-white/[0.02] border-b border-white/5 flex items-center px-6 gap-2 text-[10px] text-neutral-500 font-mono">
-                     <FileCode2 className="w-3.5 h-3.5" />
-                     {activeFile.split('/').map((part, i, arr) => (
-                       <React.Fragment key={i}>
-                         <span className={i === arr.length - 1 ? "text-emerald-400 font-bold" : ""}>{part}</span>
-                         {i < arr.length - 1 && <ChevronRight className="w-2.5 h-2.5" />}
-                       </React.Fragment>
-                     ))}
-                   </div>
-                 )}
+                <div className="h-10 shrink-0 bg-white/[0.02] border-b border-white/5 flex items-center px-6 gap-2 text-[10px] text-neutral-500 font-mono">
+                  <button onClick={() => setActiveTab('editor')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'editor' && "text-emerald-400")}>Editor</button>
+                  <button onClick={() => setActiveTab('todo')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'todo' && "text-emerald-400")}>To-Do</button>
+                  {activeTab === 'editor' && activeFile && (
+                    <>
+                      <div className="w-px h-3 bg-white/10" />
+                      <FileCode2 className="w-3.5 h-3.5" />
+                      {activeFile.split('/').map((part, i, arr) => (
+                        <React.Fragment key={i}>
+                          <span className={i === arr.length - 1 ? "text-emerald-400 font-bold" : ""}>{part}</span>
+                          {i < arr.length - 1 && <ChevronRight className="w-2.5 h-2.5" />}
+                        </React.Fragment>
+                      ))}
+                    </>
+                  )}
+                 </div>
                  <div className="flex-1 overflow-hidden">
-                    <CodeEditor />
+                    {activeTab === 'editor' ? (
+                       <CodeEditor />
+                    ) : (
+                       <ToDo />
+                    )}
                  </div>
                </div>
             </div>
