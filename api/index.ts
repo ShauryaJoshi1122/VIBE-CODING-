@@ -75,12 +75,12 @@ async function createServer() {
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
     if (!code) {
-      return res.status(400).send("Authorization code missing from GitHub redirect");
+      return res.status(400).json({ error: "Authorization code missing from GitHub redirect" });
     }
 
     if (!clientId || !clientSecret) {
       console.error("[GitHub] Missing credentials. Ensure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are set in environment.");
-      return res.status(500).send("GitHub credentials (ID/Secret) are not configured on the server.");
+      return res.status(500).json({ error: "GitHub credentials (ID/Secret) are not configured on the server." });
     }
 
     try {
@@ -109,12 +109,12 @@ async function createServer() {
 
       if (!accessToken) {
         console.error("[GitHub] Token exchange failed:", data);
-        return res.status(401).send(`Failed to obtain access token: ${data.error_description || data.error || "Unknown error"}`);
+        return res.status(401).json({ error: `Failed to obtain access token: ${data.error_description || data.error || "Unknown error"}` });
       }
 
       console.log("[GitHub] Auth successful!");
-
-      // Send the token back to the opener window and close the popup
+      
+      // ... keep existing HTML response for success - this is for the popup window close behavior
       res.send(`
         <html>
           <body>
@@ -135,7 +135,7 @@ async function createServer() {
       `);
     } catch (error: any) {
       console.error("GitHub Auth Error:", error);
-      res.status(500).send(`Authentication failed: ${error.message}`);
+      res.status(500).json({ error: `Authentication failed: ${error.message}` });
     }
   });
 
