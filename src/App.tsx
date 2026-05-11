@@ -9,11 +9,13 @@ import { saveProjectToCloud } from './lib/firebase';
 import { useState, useEffect } from 'react';
 
 import { ToDo } from './components/todo/ToDo';
+import { Portfolio } from './components/portfolio/Portfolio';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const { projectId, files, activeFile, setActiveFile, resetStore, messages, githubToken, setGithubToken, isSaving, setIsSaving, isGenerating, sidebarOpen, setSidebarOpen } = useAppStore();
   const [activeTab, setActiveTab] = useState<'editor' | 'todo'>('editor');
+  const [viewMode, setViewMode] = useState<'edit' | 'portfolio'>('portfolio');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isPushing, setIsPushing] = useState(false);
@@ -414,6 +416,19 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+               onClick={() => setViewMode(viewMode === 'edit' ? 'portfolio' : 'edit')}
+               className={cn(
+                 "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all border",
+                 viewMode === 'edit' 
+                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                   : "bg-neutral-500/10 text-neutral-400 border-white/5"
+               )}
+            >
+              <LayoutPanelLeft className="w-3.5 h-3.5" />
+              {viewMode === 'edit' ? 'Show Portfolio' : 'Edit Website'}
+            </button>
+
             <div className="flex flex-col items-end mr-4 hidden md:flex">
               <div className="flex items-center gap-2">
                 {isSaving ? (
@@ -477,54 +492,61 @@ export default function App() {
           </div>
         </header>
 
-        {/* Editor Workspace */}
+        {/* Editor Workspace or Portfolio */}
         <div className="flex-1 overflow-hidden relative bg-black/20">
-          <div className="absolute inset-0 flex flex-col sm:flex-row">
-            {/* File Explorer */}
-            <motion.div 
-              layout
-              className="w-full sm:w-[240px] h-[35%] sm:h-full bg-white/[0.01] border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col overflow-hidden"
-            >
-              <div className="flex-1 overflow-y-auto no-scrollbar">
-                <FileExplorer 
-                  files={files} 
-                  activeFile={activeFile} 
-                  onFileSelect={(path) => {
-                    const actualPath = Object.keys(files).find(k => k === path || k === `/${path}`) || path;
-                    setActiveFile(actualPath);
-                  }} 
-                />
+           {viewMode === 'portfolio' ? (
+             <Portfolio />
+           ) : (
+             <div className="absolute inset-0 flex flex-col sm:flex-row">
+                {/* File Explorer */}
+                <motion.div 
+                  layout
+                  className="w-full sm:w-[240px] h-[35%] sm:h-full bg-white/[0.01] border-b sm:border-b-0 sm:border-r border-white/5 flex flex-col overflow-hidden"
+                >
+                  <div className="flex-1 overflow-y-auto no-scrollbar">
+                    <FileExplorer 
+                      files={files} 
+                      activeFile={activeFile} 
+                      onFileSelect={(path) => {
+                        const actualPath = Object.keys(files).find(k => k === path || k === `/${path}`) || path;
+                        setActiveFile(actualPath);
+                      }} 
+                    />
+                  </div>
+                </motion.div>
+                <div className="flex-1 overflow-hidden relative">
+                   <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent z-10" />
+                   <div className="flex flex-col h-full">
+                    <div className="h-10 shrink-0 bg-white/[0.02] border-b border-white/5 flex items-center px-6 gap-2 text-[10px] text-neutral-500 font-mono">
+                      <button onClick={() => setActiveTab('editor')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'editor' && "text-emerald-400")}>Editor</button>
+                      <button onClick={() => setActiveTab('todo')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'todo' && "text-emerald-400")}>To-Do</button>
+                      <button onClick={() => setActiveTab('portfolio')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'portfolio' && "text-emerald-400")}>Portfolio</button>
+                      {activeTab === 'editor' && activeFile && (
+                        <>
+                          <div className="w-px h-3 bg-white/10" />
+                          <FileCode2 className="w-3.5 h-3.5" />
+                          {activeFile.split('/').map((part, i, arr) => (
+                            <React.Fragment key={i}>
+                              <span className={i === arr.length - 1 ? "text-emerald-400 font-bold" : ""}>{part}</span>
+                              {i < arr.length - 1 && <ChevronRight className="w-2.5 h-2.5" />}
+                            </React.Fragment>
+                          ))}
+                        </>
+                      )}
+                     </div>
+                     <div className="flex-1 overflow-hidden">
+                        {activeTab === 'editor' ? (
+                           <CodeEditor />
+                        ) : activeTab === 'todo' ? (
+                           <ToDo />
+                        ) : (
+                           <Portfolio />
+                        )}
+                     </div>
+                   </div>
+                </div>
               </div>
-            </motion.div>
-            <div className="flex-1 overflow-hidden relative">
-               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent z-10" />
-               <div className="flex flex-col h-full">
-                <div className="h-10 shrink-0 bg-white/[0.02] border-b border-white/5 flex items-center px-6 gap-2 text-[10px] text-neutral-500 font-mono">
-                  <button onClick={() => setActiveTab('editor')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'editor' && "text-emerald-400")}>Editor</button>
-                  <button onClick={() => setActiveTab('todo')} className={cn("px-2 py-0.5 rounded hover:text-white transition-colors uppercase tracking-widest", activeTab === 'todo' && "text-emerald-400")}>To-Do</button>
-                  {activeTab === 'editor' && activeFile && (
-                    <>
-                      <div className="w-px h-3 bg-white/10" />
-                      <FileCode2 className="w-3.5 h-3.5" />
-                      {activeFile.split('/').map((part, i, arr) => (
-                        <React.Fragment key={i}>
-                          <span className={i === arr.length - 1 ? "text-emerald-400 font-bold" : ""}>{part}</span>
-                          {i < arr.length - 1 && <ChevronRight className="w-2.5 h-2.5" />}
-                        </React.Fragment>
-                      ))}
-                    </>
-                  )}
-                 </div>
-                 <div className="flex-1 overflow-hidden">
-                    {activeTab === 'editor' ? (
-                       <CodeEditor />
-                    ) : (
-                       <ToDo />
-                    )}
-                 </div>
-               </div>
-            </div>
-          </div>
+           )}
         </div>
       </motion.main>
     </div>
